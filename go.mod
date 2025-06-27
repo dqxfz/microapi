@@ -1,4 +1,4 @@
-module github.com/dqxfz/microapi
+module github.com/dqxfz/microapi/feign
 
 go 1.23.10
 

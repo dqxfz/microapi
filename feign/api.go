@@ -1,54 +1,58 @@
-package main
+package feign
 
 import (
-	"io"
+	"context"
+	"fmt"
+	"github.com/goccy/go-json"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
-// 声明接口
-type UserClient interface {
-	GetUser(id string) (string, error)
+// UserService 定义用户服务的接口
+type UserService interface {
+	GetUser(ctx context.Context, userID string) (*User, error)
 }
 
-// 实现接口的结构体
-type userClient struct {
-	baseURL string
-	client  *http.Client
+// User 定义用户数据结构
+type User struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
-func (u *userClient) GetUser(id string) (string, error) {
-	req, err := http.NewRequest("GET", u.baseURL+"/user?id="+id, nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := u.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(body), nil
-}
-
-// 构造函数
-func NewUserClient(baseURL string) UserClient {
-	return &userClient{
+// NewUserService 创建一个新的 UserService 实例
+func NewUserService(baseURL string) UserService {
+	return &userService{
 		baseURL: baseURL,
 		client:  &http.Client{},
 	}
 }
 
-func main() {
-	// 启动 Gin 服务，添加 /user 路由
-	r := gin.Default()
-	r.GET("/user", func(c *gin.Context) {
-		id := c.Query("id")
-		c.String(http.StatusOK, "User ID: %s", id)
-	})
-	r.Run(":8080")
+type userService struct {
+	baseURL string
+	client  *http.Client
+}
+
+func (s *userService) GetUser(ctx context.Context, userID string) (*User, error) {
+	url := s.baseURL + "/users/" + userID
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var user User
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
