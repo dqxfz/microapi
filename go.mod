@@ -1,4 +1,4 @@
-module gofirst
+module microapi
 
 go 1.23.0
 
