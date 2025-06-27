@@ -1,8 +1,6 @@
-module microapi
+module github.com/dqxfz/microapi
 
-go 1.23.0
-
-toolchain go1.23.10
+go 1.23.10
 
 require (
 	github.com/bytedance/sonic v1.13.3 // indirect
